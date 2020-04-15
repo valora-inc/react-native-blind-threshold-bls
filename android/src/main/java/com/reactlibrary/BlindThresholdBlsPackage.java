@@ -1,4 +1,4 @@
-package com.reactlibrary;
+package org.celo;
 
 import java.util.Arrays;
 import java.util.Collections;

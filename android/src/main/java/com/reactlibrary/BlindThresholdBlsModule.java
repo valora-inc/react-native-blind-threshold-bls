@@ -1,4 +1,4 @@
-package com.reactlibrary;
+package org.celo;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
