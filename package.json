@@ -6,6 +6,7 @@
   "main": "index.js",
   "author": "Celo",
   "license": "Apache-2.0",
+  "licenseFilename": "LICENSE",
   "homepage": "https://github.com/celo-org/react-native-blind-threshold-bls",
   "repository": {
     "type": "git",
