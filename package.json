@@ -1,0 +1,26 @@
+{
+  "name": "react-native-blind-threshold-bls",
+  "title": "React Native Blind Threshold Bls",
+  "version": "1.0.0",
+  "description": "React Native module to interface with OPRF library",
+  "main": "index.js",
+  "author": "Celo",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/celo-org/react-native-blind-threshold-bls",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/celo-org/react-native-blind-threshold-bls.git",
+    "baseUrl": "https://github.com/celo-org/react-native-blind-threshold-bls"
+  },
+  "keywords": [
+    "react-native", "bls", "blind"
+  ],
+  "peerDependencies": {
+    "react": "^16.8.1",
+    "react-native": ">=0.60.0-rc.0 <1.0.x"
+  },
+  "devDependencies": {
+    "react": "^16.9.0",
+    "react-native": "^0.61.5"
+  }
+}
