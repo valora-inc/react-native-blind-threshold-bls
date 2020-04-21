@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "React Native module to interface with OPRF library",
   "main": "index.js",
+  "types": "index.d.ts",
   "author": "Celo",
   "license": "Apache-2.0",
   "licenseFilename": "LICENSE",
