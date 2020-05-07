@@ -78,22 +78,26 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             Log.d(TAG, "Calling unblind");
             unblind(blindedSigBuf, blindingFactor, unblindedSigBuf);
 
-
             Log.d(TAG, "Unblind call done, deserializing public key");
             PointerByReference publicKey = new PointerByReference();
             deserialize_pubkey(signerPublicKey.getBytes(), publicKey);
 
             Log.d(TAG, "Verifying the signatures");
+            boolean signatureValid = false;
             try {
               // Verify throws if the signatures are not correct
               verify(publicKey, messageBuf, unblindedSigBuf);
+              signatureValid = true;
             } catch (Exception e) {
               promise.reject("Invalid threshold signature");
             }
 
-            Log.d(TAG, "Verify call done, retrieving signed message from buffer");
-            byte[] unblindedSigBytes = unblindedSigBuf.getMessage();
-            String b64UnblindedSig = Base64.encodeToString(unblindedSigBytes, Base64.DEFAULT);
+            if (signatureValid) {
+              Log.d(TAG, "Verify call done, retrieving signed message from buffer");
+              byte[] unblindedSigBytes = unblindedSigBuf.getMessage();
+              String b64UnblindedSig = Base64.encodeToString(unblindedSigBytes, Base64.DEFAULT);
+              promise.resolve(b64UnblindedSig);
+            }
 
             Log.d(TAG, "Cleaning up memory");
             messageBuf = null;
@@ -102,8 +106,6 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             free_vector(unblindedSigBuf.message, unblindedSigBuf.len);
             destroy_pubkey(publicKey);
 
-            Log.d(TAG, "Done unblinding, returning signed message");
-            promise.resolve(b64UnblindedSig);
         } catch (Exception e) {
             Log.e(TAG, "Exception while unblinding the signature: " + e.getMessage());
             promise.reject(e.getMessage());

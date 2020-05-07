@@ -9,16 +9,14 @@ Pod::Spec.new do |s|
   s.description  = <<-DESC
                   react-native-blind-threshold-bls
                    DESC
-  s.homepage     = "https://github.com/github_account/react-native-blind-threshold-bls"
-  # brief license entry:
-  s.license      = "MIT"
-  # optional - use expanded license entry instead:
-  # s.license    = { :type => "MIT", :file => "LICENSE" }
-  s.authors      = { "Your Name" => "yourname@email.com" }
+  s.homepage     = "https://github.com/celo-org/react-native-blind-threshold-bls"
+  s.license      = "Apache 2.0"
+  s.authors      = { "Celo" => "support@celo.org" }
   s.platforms    = { :ios => "9.0" }
-  s.source       = { :git => "https://github.com/github_account/react-native-blind-threshold-bls.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/celo-org/react-native-blind-threshold-bls", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,swift}"
+  s.ios.vendored_library = 'ios/Libraries/libblind_threshold_bls.a'
   s.requires_arc = true
 
   s.dependency "React"
