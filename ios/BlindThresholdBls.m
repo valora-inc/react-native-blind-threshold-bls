@@ -12,6 +12,7 @@
 
 RCT_EXPORT_MODULE()
 
+// TODO add support for multilpe outstanding blind calls
 RCT_REMAP_METHOD(blindMessage,
                  message:(NSString *) message
                  resolver:(RCTPromiseResolveBlock)resolve
@@ -28,14 +29,12 @@ RCT_REMAP_METHOD(blindMessage,
     
     RCTLogInfo(@"Preparing blinding seed");
     NSMutableData* seedData = [NSMutableData dataWithCapacity:32];
-    for( unsigned int i = 0 ; i < 8; ++i )
-    { 
-      u_int32_t randomBits = arc4random();
-      [seedData appendBytes:(void*)&randomBits length:4];
+    int status = SecRandomCopyBytes(kSecRandomDefault, 32, seedData.mutableBytes);
+    if (status != errSecSuccess) {
+      [NSException raise:@"Random bytes copy failed" format:@"status code %d", status];
     }
-    uint8_t *seedBytes = (uint8_t*)[seedData bytes];
     Buffer seedBuf;
-    seedBuf.ptr = seedBytes;
+    seedBuf.ptr = (uint8_t*)[seedData bytes];
     seedBuf.len = 32;
 
     RCTLogInfo(@"Calling blind");

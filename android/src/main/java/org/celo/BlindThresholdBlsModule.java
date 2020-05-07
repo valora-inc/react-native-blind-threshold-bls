@@ -36,6 +36,7 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
         return "BlindThresholdBls";
     }
 
+    // TODO add support for multilpe outstanding blind calls
     @ReactMethod
     public void blindMessage(String message, Promise promise) {
         try {
