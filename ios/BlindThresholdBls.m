@@ -62,7 +62,7 @@ RCT_REMAP_METHOD(blindMessage,
 
 RCT_REMAP_METHOD(unblindMessage,
                  base64BlindedSignature:(NSString *) base64BlindedSignature
-                 signerPublicKey:(NSString *) signerPublicKey
+                 base64SignerPublicKey:(NSString *) base64SignerPublicKey
                  resolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject)
 {
