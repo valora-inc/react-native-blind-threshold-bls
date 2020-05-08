@@ -7,12 +7,12 @@
 
 @implementation BlindThresholdBls {
   Token_PrivateKey* blindingFactor;
-  Buffer messageBuf;
+  NSData* messageData;
 }
 
 RCT_EXPORT_MODULE()
 
-// TODO add support for multilpe outstanding blind calls
+// TODO add support for multiple outstanding blind calls
 RCT_REMAP_METHOD(blindMessage,
                  message:(NSString *) message
                  resolver:(RCTPromiseResolveBlock)resolve
@@ -20,12 +20,14 @@ RCT_REMAP_METHOD(blindMessage,
 {
   @try {
     RCTLogInfo(@"Preparing blind message buffers");
-    NSData *messageData = [message dataUsingEncoding:NSUTF8StringEncoding];
+    messageData = [message dataUsingEncoding:NSUTF8StringEncoding];
+    Buffer messageBuf;
     messageBuf.ptr = (uint8_t*)[messageData bytes];
     messageBuf.len = [messageData length];
-//    uint8_t * messageBytes = malloc(length);
-//    memcpy(messageBytes, [messageData bytes], length);
+
     Buffer blindedMessageBuf;
+    blindedMessageBuf.ptr = NULL;
+    blindedMessageBuf.len = 0;
     
     RCTLogInfo(@"Preparing blinding seed");
     NSMutableData* seedData = [NSMutableData dataWithCapacity:32];
@@ -42,12 +44,13 @@ RCT_REMAP_METHOD(blindMessage,
 
     RCTLogInfo(@"Blind call done, retrieving blinded message from buffer");
     int blindedMessageLen = blindedMessageBuf.len;
+    uint8_t* blindedMessagePtr = blindedMessageBuf.ptr;
     NSMutableData* blindedMessageData = [NSMutableData dataWithCapacity:blindedMessageLen];
-    [blindedMessageData appendBytes:blindedMessageBuf.ptr length:blindedMessageLen];
+    [blindedMessageData appendBytes:blindedMessagePtr length:blindedMessageLen];
     NSString *blindedMessageBase64 = [blindedMessageData base64EncodedStringWithOptions:0];
     
     RCTLogInfo(@"Cleaning Up Memory");
-    free_vector(blindedMessageBuf.ptr, blindedMessageBuf.len);
+    free_vector(blindedMessagePtr, blindedMessageLen);
     
     resolve(blindedMessageBase64);
   }
@@ -70,7 +73,10 @@ RCT_REMAP_METHOD(unblindMessage,
     Buffer blindedSigBuf;
     blindedSigBuf.ptr = (uint8_t*)[blindedSigData bytes];
     blindedSigBuf.len = [blindedSigData length];
+
     Buffer unblindedSigBuf;
+    unblindedSigBuf.ptr = NULL;
+    unblindedSigBuf.len = 0;
     
     RCTLogInfo(@"Calling unblind");
     unblind(&blindedSigBuf, blindingFactor, &unblindedSigBuf);
@@ -83,8 +89,11 @@ RCT_REMAP_METHOD(unblindMessage,
 
     RCTLogInfo(@"Verifying the signatures");
     BOOL signatureValid = NO;
+    // Verify throws if the signatures are not correct
     @try {
-      // Verify throws if the signatures are not correct
+      Buffer messageBuf;
+      messageBuf.ptr = (uint8_t*)[messageData bytes];
+      messageBuf.len = [messageData length];
       verify(publicKey, &messageBuf, &unblindedSigBuf);
       signatureValid = YES;
     }
@@ -102,6 +111,7 @@ RCT_REMAP_METHOD(unblindMessage,
     }
 
     RCTLogInfo(@"Cleaning Up Memory");
+    messageData = NULL;
     destroy_token(blindingFactor);
     blindingFactor = NULL;
     free_vector(unblindedSigBuf.ptr, unblindedSigBuf.len);

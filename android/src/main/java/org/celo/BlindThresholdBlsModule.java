@@ -85,8 +85,8 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
 
             Log.d(TAG, "Verifying the signatures");
             boolean signatureValid = false;
+            // Verify throws if the signatures are not correct
             try {
-              // Verify throws if the signatures are not correct
               verify(publicKey, messageBuf, unblindedSigBuf);
               signatureValid = true;
             } catch (Exception e) {
