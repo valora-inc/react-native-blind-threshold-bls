@@ -41,7 +41,8 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
     public void blindMessage(String message, Promise promise) {
         try {
             Log.d(TAG, "Preparing blind message buffers");
-            messageBuf = new Buffer(message.getBytes());
+            byte[] messageBytes = Base64.decode(message, Base64.DEFAULT);
+            messageBuf = new Buffer(messageBytes);
             Buffer blindedMessageBuf = new Buffer();
 
             Log.d(TAG, "Preparing blinding seed");
@@ -69,7 +70,7 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void unblindMessage(String base64BlindedSignature, String signerPublicKey, Promise promise) {
+    public void unblindMessage(String base64BlindedSignature, String base64SignerPublicKey, Promise promise) {
         try {
             Log.d(TAG, "Preparing unblind buffers");
             byte[] blindedSigBytes = Base64.decode(base64BlindedSignature, Base64.DEFAULT);
@@ -81,16 +82,17 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
 
             Log.d(TAG, "Unblind call done, deserializing public key");
             PointerByReference publicKey = new PointerByReference();
-            deserialize_pubkey(signerPublicKey.getBytes(), publicKey);
+            byte[] signerPublicKeyBytes = Base64.decode(base64SignerPublicKey, Base64.DEFAULT);
+            deserialize_pubkey(signerPublicKeyBytes, publicKey);
 
             Log.d(TAG, "Verifying the signatures");
             boolean signatureValid = false;
-            // Verify throws if the signatures are not correct
+            // Verify may throw if the signatures are not correct
             try {
-              verify(publicKey, messageBuf, unblindedSigBuf);
-              signatureValid = true;
+              signatureValid = verify(publicKey, messageBuf, unblindedSigBuf);
             } catch (Exception e) {
-              promise.reject("Invalid threshold signature");
+              Log.d(TAG, "Invalid threshold signature found when verifying");
+              signatureValid = false;
             }
 
             if (signatureValid) {
@@ -98,6 +100,8 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
               byte[] unblindedSigBytes = unblindedSigBuf.getMessage();
               String b64UnblindedSig = Base64.encodeToString(unblindedSigBytes, Base64.DEFAULT);
               promise.resolve(b64UnblindedSig);
+            } else {
+              promise.reject("Invalid threshold signature");
             }
 
             Log.d(TAG, "Cleaning up memory");

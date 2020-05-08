@@ -19,10 +19,7 @@ RCT_REMAP_METHOD(blindMessage,
 {
   @try {
     RCTLogInfo(@"Preparing blind message buffers");
-    NSData* messageData = [message dataUsingEncoding:NSUTF8StringEncoding];
-//    NSUInteger messageLen = [messageData length];
-//    uint8_t *messageBytes = malloc(sizeof(uint8_t) * messageLen);
-//    [messageData getBytes:messageBytes length:messageLen];
+    NSData *messageData = [[NSData alloc] initWithBase64EncodedString:message options:0];
     messageBuf.ptr = [BlindThresholdBls nsDataToByteArray:messageData];
     messageBuf.len = [messageData length];
 
@@ -84,23 +81,23 @@ RCT_REMAP_METHOD(unblindMessage,
     unblind(&blindedSigBuf, blindingFactor, &unblindedSigBuf);
 
     RCTLogInfo(@"Unblind call done, deserializing public key");
-    NSData *publicKeyData = [signerPublicKey dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *publicKeyData = [[NSData alloc] initWithBase64EncodedString:signerPublicKey options:0];
     uint8_t* publicKeyBytes = [BlindThresholdBls nsDataToByteArray:publicKeyData];
-    PublicKey* publicKey;
+    PublicKey* publicKey = NULL;
     deserialize_pubkey(publicKeyBytes, &publicKey);
 
     RCTLogInfo(@"Verifying the signatures");
-    BOOL signatureValid = NO;
-    // Verify throws if the signatures are not correct
+    bool signatureValid = false;
+    // Verify may throw if the signatures are not correct
     @try {
-      verify(publicKey, &messageBuf, &unblindedSigBuf);
-      signatureValid = YES;
+      signatureValid = verify(publicKey, &messageBuf, &unblindedSigBuf);
     }
     @catch (NSException *exception) {
-      reject(@"Key verification error", @"Invalid threshold signature", nil);
+      signatureValid = false;
+      RCTLogInfo(@"Invalid threshold signature found when verifying");
     }
 
-    if (signatureValid == YES) {
+    if (signatureValid == true) {
       RCTLogInfo(@"Verify call done, retrieving signed message from buffer");
       const size_t unblindedSigLen = unblindedSigBuf.len;
       NSMutableData* unblindedSigData = [NSMutableData dataWithCapacity:unblindedSigLen];
@@ -108,17 +105,21 @@ RCT_REMAP_METHOD(unblindMessage,
       NSString *b64UnblindedSig = [unblindedSigData base64EncodedStringWithOptions:0];
       resolve(b64UnblindedSig);
     }
+    else {
+      reject(@"Key verification error", @"Invalid threshold signature", nil);
+    }
 
     RCTLogInfo(@"Cleaning Up Memory");
     free_vector(unblindedSigBuf.ptr, unblindedSigBuf.len);
+    destroy_token(blindingFactor);
+    blindingFactor = NULL;
     destroy_pubkey(publicKey);
     free(publicKeyBytes);
     free(blindedSigBuf.ptr);
-    destroy_token(blindingFactor);
     free(messageBuf.ptr);
     messageBuf.ptr = NULL;
     messageBuf.len = 0;
-    blindingFactor = NULL;
+   
   } 
   @catch (NSException *exception) {
     RCTLogInfo(@"Exception while unblinding the signature: %@", exception.reason); 
