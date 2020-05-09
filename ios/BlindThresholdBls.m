@@ -81,7 +81,7 @@ RCT_REMAP_METHOD(unblindMessage,
     unblind(&blindedSigBuf, blindingFactor, &unblindedSigBuf);
 
     RCTLogInfo(@"Unblind call done, deserializing public key");
-    NSData *publicKeyData = [[NSData alloc] initWithBase64EncodedString:signerPublicKey options:0];
+    NSData *publicKeyData = [[NSData alloc] initWithBase64EncodedString:base64SignerPublicKey options:0];
     uint8_t* publicKeyBytes = [BlindThresholdBls nsDataToByteArray:publicKeyData];
     PublicKey* publicKey = NULL;
     deserialize_pubkey(publicKeyBytes, &publicKey);
