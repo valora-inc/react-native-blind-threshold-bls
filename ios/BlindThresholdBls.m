@@ -87,15 +87,7 @@ RCT_REMAP_METHOD(unblindMessage,
     deserialize_pubkey(publicKeyBytes, &publicKey);
 
     RCTLogInfo(@"Verifying the signatures");
-    bool signatureValid = false;
-    // Verify may throw if the signatures are not correct
-    @try {
-      signatureValid = verify(publicKey, &messageBuf, &unblindedSigBuf);
-    }
-    @catch (NSException *exception) {
-      signatureValid = false;
-      RCTLogInfo(@"Invalid threshold signature found when verifying");
-    }
+    bool signatureValid = verify(publicKey, &messageBuf, &unblindedSigBuf);
 
     if (signatureValid == true) {
       RCTLogInfo(@"Verify call done, retrieving signed message from buffer");
@@ -106,6 +98,7 @@ RCT_REMAP_METHOD(unblindMessage,
       resolve(b64UnblindedSig);
     }
     else {
+      RCTLogInfo(@"Invalid threshold signature found when verifying");
       reject(@"Key verification error", @"Invalid threshold signature", nil);
     }
 
@@ -119,7 +112,6 @@ RCT_REMAP_METHOD(unblindMessage,
     free(messageBuf.ptr);
     messageBuf.ptr = NULL;
     messageBuf.len = 0;
-   
   } 
   @catch (NSException *exception) {
     RCTLogInfo(@"Exception while unblinding the signature: %@", exception.reason); 

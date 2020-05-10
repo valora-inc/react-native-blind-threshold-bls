@@ -78,38 +78,32 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             Buffer unblindedSigBuf = new Buffer();
 
             Log.d(TAG, "Calling unblind");
-            unblind(blindedSigBuf, blindingFactor, unblindedSigBuf);
+            unblind(blindedSigBuf, blindingFactor.getValue(), unblindedSigBuf);
 
-            Log.d(TAG, "Unblind call done, deserializing public key");
+            Log.d(TAG, "Unblind call resul done. Deserializing public key");
             PointerByReference publicKey = new PointerByReference();
             byte[] signerPublicKeyBytes = Base64.decode(base64SignerPublicKey, Base64.DEFAULT);
             deserialize_pubkey(signerPublicKeyBytes, publicKey);
 
             Log.d(TAG, "Verifying the signatures");
-            boolean signatureValid = false;
-            // Verify may throw if the signatures are not correct
-            try {
-              signatureValid = verify(publicKey, messageBuf, unblindedSigBuf);
-            } catch (Exception e) {
-              Log.d(TAG, "Invalid threshold signature found when verifying");
-              signatureValid = false;
-            }
+            boolean signatureValid = verify(publicKey.getValue(), messageBuf, unblindedSigBuf);
 
-            if (signatureValid) {
+            if (signatureValid == true) {
               Log.d(TAG, "Verify call done, retrieving signed message from buffer");
               byte[] unblindedSigBytes = unblindedSigBuf.getMessage();
               String b64UnblindedSig = Base64.encodeToString(unblindedSigBytes, Base64.DEFAULT);
               promise.resolve(b64UnblindedSig);
             } else {
+              Log.d(TAG, "Invalid threshold signature found when verifying");
               promise.reject("Invalid threshold signature");
             }
 
             Log.d(TAG, "Cleaning up memory");
             messageBuf = null;
-            destroy_token(blindingFactor);
+            destroy_token(blindingFactor.getValue());
             blindingFactor = null;
             free_vector(unblindedSigBuf.message, unblindedSigBuf.len);
-            destroy_pubkey(publicKey);
+            destroy_pubkey(publicKey.getValue());
 
         } catch (Exception e) {
             Log.e(TAG, "Exception while unblinding the signature: " + e.getMessage());
@@ -123,10 +117,10 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
     // https://github.com/celo-org/celo-threshold-bls-rs/blob/master/ffi/threshold.h
     // Note, seed must be >= 32 characters long
     private static native void blind(Buffer message, Buffer seed, Buffer blinded_message_out, PointerByReference blinding_factor_out);
-    private static native boolean unblind(Buffer blinded_signature, PointerByReference blinding_factor, Buffer unblinded_signature);
-    private static native void deserialize_pubkey(byte[] pubkey_buf, PointerByReference pubkey);
-    private static native boolean verify(PointerByReference public_key, Buffer message, Buffer signature);
+    private static native boolean unblind(Buffer blinded_signature, Pointer blinding_factor, Buffer unblinded_signature);
+    private static native boolean deserialize_pubkey(byte[] pubkey_buf, PointerByReference pubkey);
+    private static native boolean verify(Pointer public_key, Buffer message, Buffer signature);
     private static native void free_vector(Pointer bytes, int len);
-    private static native void destroy_token(PointerByReference token);
-    private static native void destroy_pubkey(PointerByReference public_key);
+    private static native void destroy_token(Pointer token);
+    private static native void destroy_pubkey(Pointer public_key);
 }
