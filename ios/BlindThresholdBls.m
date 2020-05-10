@@ -55,7 +55,8 @@ RCT_REMAP_METHOD(blindMessage,
   }
   @catch (NSException *exception) {
     RCTLogInfo(@"Exception while blinding the message: %@", exception.reason); 
-    reject(@"Blinding error", exception.reason, nil);
+    NSError *error = [NSError errorWithDomain:@"org.celo.mobile" code:500 userInfo:nil];
+    reject(@"Blinding error", exception.reason, error);
   }
 }
 
@@ -99,7 +100,8 @@ RCT_REMAP_METHOD(unblindMessage,
     }
     else {
       RCTLogInfo(@"Invalid threshold signature found when verifying");
-      reject(@"Key verification error", @"Invalid threshold signature", nil);
+      NSError *error = [NSError errorWithDomain:@"org.celo.mobile" code:400 userInfo:nil];
+      reject(@"Key verification error", @"Invalid threshold signature", error);
     }
 
     RCTLogInfo(@"Cleaning Up Memory");
@@ -115,7 +117,8 @@ RCT_REMAP_METHOD(unblindMessage,
   } 
   @catch (NSException *exception) {
     RCTLogInfo(@"Exception while unblinding the signature: %@", exception.reason); 
-    reject(@"Unblinding error", exception.reason, nil);
+    NSError *error = [NSError errorWithDomain:@"org.celo.mobile" code:500 userInfo:nil];
+    reject(@"Unblinding error", exception.reason, error);
   }
 }
 
