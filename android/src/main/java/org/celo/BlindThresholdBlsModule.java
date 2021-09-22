@@ -47,6 +47,20 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             Buffer blindedMessageBuf = new Buffer();
 
             byte[] randomnessBytes = Base64.decode(randomness, Base64.DEFAULT);
+
+            // Must be 32 length
+            int originalLength = randomnessBytes.length;
+            randomnessBytes = Arrays.copyOf(randomnessBytes, 32);
+
+            if (originalLength < 32) {
+                // Pad if not enough bytes
+                int missingBytes = originalLength - 32;
+                Random random = new Random();
+                byte[] seed = new byte[missingBytes];
+                random.nextBytes(seed);
+                System.arraycopy(randomnessBytes, 0, result, originalLength, missingBytes);
+            }
+
             Buffer randomnessBuf = new Buffer(randomnessBytes);
 
             Log.d(TAG, "Calling blind");
