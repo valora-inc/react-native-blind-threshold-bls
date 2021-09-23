@@ -59,7 +59,7 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
                 Random random = new Random();
                 byte[] seed = new byte[missingBytes];
                 random.nextBytes(seed);
-                System.arraycopy(randomnessBytes, 0, result, originalLength, missingBytes);
+                System.arraycopy(randomnessBytes, 0, seed, originalLength, missingBytes);
             }
 
             Buffer randomnessBuf = new Buffer(randomnessBytes);
