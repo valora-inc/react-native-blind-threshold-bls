@@ -1,5 +1,6 @@
 package org.celo;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import com.facebook.react.bridge.ReactApplicationContext;
