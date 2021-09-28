@@ -38,15 +38,3 @@ To accomodate JNA, add the following to the consuming app's proguard rules:
 -keep class com.sun.jna.* { *; }
 -keepclassmembers class * extends com.sun.jna.* { public *; }
 ```
-
-## Building
-
-### Android
-
-To build the Android library, you can use the `gradlew` script.
-
-```shell
-cd android
-chmod u+x gradlew
-./gradlew assembleDebug
-```
