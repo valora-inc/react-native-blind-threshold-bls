@@ -11,12 +11,10 @@
 
 RCT_EXPORT_MODULE()
 
-// TODO add support for multiple outstanding blind calls
-RCT_REMAP_METHOD(blindMessage,
-                 message:(NSString *) message
+- (void) blindMessage: (NSString *) message
                  randomness:(NSString *) randomness
                  resolver:(RCTPromiseResolveBlock)resolve
-                 rejecter:(RCTPromiseRejectBlock)reject)
+                 rejecter:(RCTPromiseRejectBlock)reject
 {
   @try {
     RCTLogInfo(@"Preparing blind message buffers");
@@ -30,6 +28,15 @@ RCT_REMAP_METHOD(blindMessage,
     
     RCTLogInfo(@"Preparing randomness buffer");
     NSData *randomnessData = [[NSData alloc] initWithBase64EncodedString:randomness options:0];
+
+    // Random must be 32 bytes
+    if ([randomnessData length] != 32) {
+      RCTLogInfo(@"Exception while blinding the message: Randomness must be 32 bytes"); 
+      NSError *error = [NSError errorWithDomain:@"org.celo.mobile" code:500 userInfo:nil];
+      reject(@"Blinding error", @"Randomness must be 32 bytes", error);
+      return;
+    }
+
     Buffer randomnessBuf;
     randomnessBuf.ptr = [BlindThresholdBls nsDataToByteArray:randomnessData];
     randomnessBuf.len = [randomnessData length];
@@ -45,7 +52,7 @@ RCT_REMAP_METHOD(blindMessage,
     NSString *blindedMessageBase64 = [blindedMessageData base64EncodedStringWithOptions:0];
     
     RCTLogInfo(@"Cleaning Up Memory");
-    free_vector(randomnessBuf.ptr, randomnessBuf.len)
+    free_vector(randomnessBuf.ptr, randomnessBuf.len);
     free_vector(blindedMessagePtr, blindedMessageLen);
     
     resolve(blindedMessageBase64);
@@ -55,6 +62,17 @@ RCT_REMAP_METHOD(blindMessage,
     NSError *error = [NSError errorWithDomain:@"org.celo.mobile" code:500 userInfo:nil];
     reject(@"Blinding error", exception.reason, error);
   }
+}
+
+// TODO add support for multiple outstanding blind calls
+RCT_REMAP_METHOD(blindMessageWithRandom,
+                 message:(NSString *) message
+                 randomness:(NSString *) randomness
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+
+    [self blindMessage: message randomness:randomness resolver:resolve rejecter:reject];
 }
 
 // TODO add support for multiple outstanding blind calls
@@ -81,8 +99,8 @@ RCT_REMAP_METHOD(blindMessage,
     [randomData appendBytes:randomPtr length:randomLen];
     NSString *randomBase64 = [randomData base64EncodedStringWithOptions:0];
 
-    RCTLogInfo(@"Calling blindMessage");
-    blindMessage(&message, &randomBase64, &resolver, &rejecter);
+    RCTLogInfo(@"Calling blindMessageWithRandom");
+    [self blindMessage: message randomness:randomBase64 resolver:resolve rejecter:reject];
     
     RCTLogInfo(@"Cleaning Up Memory");
     free(seedBuf.ptr);

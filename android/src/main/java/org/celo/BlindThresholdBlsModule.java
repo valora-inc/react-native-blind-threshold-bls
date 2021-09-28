@@ -40,7 +40,7 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
     // Blind the message
     // @randomness allows caller to provide deterministic form of randomness
     @ReactMethod
-    public void blindMessage(String message, String randomness, Promise promise) {
+    public void blindMessageWithRandom(String message, String randomness, Promise promise) {
         try {
             Log.d(TAG, "Preparing blind message buffers");
             byte[] messageBytes = Base64.decode(message, Base64.DEFAULT);
@@ -53,13 +53,15 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             int originalLength = randomnessBytes.length;
             randomnessBytes = Arrays.copyOf(randomnessBytes, 32);
 
+            // Pad if not enough bytes
             if (originalLength < 32) {
-                // Pad if not enough bytes
-                int missingBytes = originalLength - 32;
+                int missingBytes = 32 - originalLength;
                 Random random = new Random();
                 byte[] seed = new byte[missingBytes];
                 random.nextBytes(seed);
-                System.arraycopy(randomnessBytes, 0, seed, originalLength, missingBytes);
+                for (int i = 0; i < missingBytes; i++) {
+                  randomnessBytes[i+originalLength] = seed[i];
+                }
             }
 
             Buffer randomnessBuf = new Buffer(randomnessBytes);
@@ -92,7 +94,7 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             random.nextBytes(seed);
             String randomness = Base64.encodeToString(seed, Base64.DEFAULT);
 
-            blindMessage(message, randomness, promise);
+            blindMessageWithRandom(message, randomness, promise);
         } catch (Exception e) {
             Log.e(TAG, "Exception while blinding the message: " + e.getMessage());
             promise.reject(e.getMessage());
