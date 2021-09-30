@@ -50,18 +50,10 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             byte[] randomnessBytes = Base64.decode(randomness, Base64.DEFAULT);
 
             // Must be 32 length
-            int originalLength = randomnessBytes.length;
-            randomnessBytes = Arrays.copyOf(randomnessBytes, 32);
-
-            // Pad if not enough bytes
-            if (originalLength < 32) {
-                int missingBytes = 32 - originalLength;
-                Random random = new Random();
-                byte[] seed = new byte[missingBytes];
-                random.nextBytes(seed);
-                for (int i = 0; i < missingBytes; i++) {
-                  randomnessBytes[i+originalLength] = seed[i];
-                }
+            if (randomnessBytes.length != 32) {
+                Log.e(TAG, "Exception while blinding the message: Randomness must be 32 bytes");
+                promise.reject("Randomness must be 32 bytes");
+                return;
             }
 
             Buffer randomnessBuf = new Buffer(randomnessBytes);
