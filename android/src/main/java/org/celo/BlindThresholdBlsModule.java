@@ -76,7 +76,7 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
         }
     }
 
-    // TODO add support for multilpe outstanding blind calls
+    // TODO add support for multiple outstanding blind calls
     @ReactMethod
     public void blindMessage(String message, Promise promise) {
         try {
