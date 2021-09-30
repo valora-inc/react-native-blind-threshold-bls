@@ -11,11 +11,10 @@
 
 RCT_EXPORT_MODULE()
 
-// TODO add support for multiple outstanding blind calls
-RCT_REMAP_METHOD(blindMessage,
-                 message:(NSString *) message
+- (void) blindMessage: (NSString *) message
+                 randomness:(NSString *) randomness
                  resolver:(RCTPromiseResolveBlock)resolve
-                 rejecter:(RCTPromiseRejectBlock)reject)
+                 rejecter:(RCTPromiseRejectBlock)reject
 {
   @try {
     RCTLogInfo(@"Preparing blind message buffers");
@@ -27,18 +26,23 @@ RCT_REMAP_METHOD(blindMessage,
     blindedMessageBuf.ptr = NULL;
     blindedMessageBuf.len = 0;
     
-    RCTLogInfo(@"Preparing blinding seed");
-    uint8_t *seedData = malloc(sizeof(uint8_t) * 32);
-    int status = SecRandomCopyBytes(kSecRandomDefault, 32, seedData);
-    if (status != errSecSuccess) {
-      [NSException raise:@"Random bytes copy failed" format:@"status code %d", status];
+    RCTLogInfo(@"Preparing randomness buffer");
+    NSData *randomnessData = [[NSData alloc] initWithBase64EncodedString:randomness options:0];
+
+    // Random must be 32 bytes
+    if ([randomnessData length] != 32) {
+      RCTLogInfo(@"Exception while blinding the message: Randomness must be 32 bytes"); 
+      NSError *error = [NSError errorWithDomain:@"org.celo.mobile" code:500 userInfo:nil];
+      reject(@"Blinding error", @"Randomness must be 32 bytes", error);
+      return;
     }
-    Buffer seedBuf;
-    seedBuf.ptr = seedData;
-    seedBuf.len = 32;
+
+    Buffer randomnessBuf;
+    randomnessBuf.ptr = [BlindThresholdBls nsDataToByteArray:randomnessData];
+    randomnessBuf.len = [randomnessData length];
 
     RCTLogInfo(@"Calling blind");
-    blind(&messageBuf, &seedBuf, &blindedMessageBuf, &blindingFactor);
+    blind(&messageBuf, &randomnessBuf, &blindedMessageBuf, &blindingFactor);
 
     RCTLogInfo(@"Blind call done, retrieving blinded message from buffer");
     const size_t blindedMessageLen = blindedMessageBuf.len;
@@ -48,8 +52,8 @@ RCT_REMAP_METHOD(blindMessage,
     NSString *blindedMessageBase64 = [blindedMessageData base64EncodedStringWithOptions:0];
     
     RCTLogInfo(@"Cleaning Up Memory");
+    free_vector(randomnessBuf.ptr, randomnessBuf.len);
     free_vector(blindedMessagePtr, blindedMessageLen);
-    free(seedBuf.ptr);
     
     resolve(blindedMessageBase64);
   }
@@ -60,6 +64,53 @@ RCT_REMAP_METHOD(blindMessage,
   }
 }
 
+// TODO add support for multiple outstanding blind calls
+RCT_REMAP_METHOD(blindMessageWithRandom,
+                 message:(NSString *) message
+                 randomness:(NSString *) randomness
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+
+    [self blindMessage: message randomness:randomness resolver:resolve rejecter:reject];
+}
+
+// TODO add support for multiple outstanding blind calls
+RCT_REMAP_METHOD(blindMessage,
+                 message:(NSString *) message
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+  @try {
+    RCTLogInfo(@"Preparing blinding seed");
+    uint8_t *seedData = malloc(sizeof(uint8_t) * 32);
+    int status = SecRandomCopyBytes(kSecRandomDefault, 32, seedData);
+    if (status != errSecSuccess) {
+      [NSException raise:@"Random bytes copy failed" format:@"status code %d", status];
+    }
+    Buffer seedBuf;
+    seedBuf.ptr = seedData;
+    seedBuf.len = 32;
+    
+    // Convert randomness to base64 encoded string    
+    const size_t randomLen = seedBuf.len;
+    const uint8_t* randomPtr = seedBuf.ptr;
+    NSMutableData* randomData = [NSMutableData dataWithCapacity:randomLen];
+    [randomData appendBytes:randomPtr length:randomLen];
+    NSString *randomBase64 = [randomData base64EncodedStringWithOptions:0];
+
+    RCTLogInfo(@"Calling blindMessageWithRandom");
+    [self blindMessage: message randomness:randomBase64 resolver:resolve rejecter:reject];
+    
+    RCTLogInfo(@"Cleaning Up Memory");
+    free(seedBuf.ptr);
+  }
+  @catch (NSException *exception) {
+    RCTLogInfo(@"Exception while blinding the message: %@", exception.reason); 
+    NSError *error = [NSError errorWithDomain:@"org.celo.mobile" code:500 userInfo:nil];
+    reject(@"Blinding error", exception.reason, error);
+  }
+}
 
 RCT_REMAP_METHOD(unblindMessage,
                  base64BlindedSignature:(NSString *) base64BlindedSignature

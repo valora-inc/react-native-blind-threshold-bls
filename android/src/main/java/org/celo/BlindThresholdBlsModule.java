@@ -1,5 +1,6 @@
 package org.celo;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -36,24 +37,30 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
         return "BlindThresholdBls";
     }
 
-    // TODO add support for multilpe outstanding blind calls
+    // Blind the message
+    // @randomness allows caller to provide deterministic form of randomness
     @ReactMethod
-    public void blindMessage(String message, Promise promise) {
+    public void blindMessageWithRandom(String message, String randomness, Promise promise) {
         try {
             Log.d(TAG, "Preparing blind message buffers");
             byte[] messageBytes = Base64.decode(message, Base64.DEFAULT);
             messageBuf = new Buffer(messageBytes);
             Buffer blindedMessageBuf = new Buffer();
 
-            Log.d(TAG, "Preparing blinding seed");
-            Random random = new Random();
-            byte[] seed = new byte[32];
-            random.nextBytes(seed);
-            Buffer seedBuf = new Buffer(seed);
+            byte[] randomnessBytes = Base64.decode(randomness, Base64.DEFAULT);
+
+            // Must be 32 length
+            if (randomnessBytes.length != 32) {
+                Log.e(TAG, "Exception while blinding the message: Randomness must be 32 bytes");
+                promise.reject("Randomness must be 32 bytes");
+                return;
+            }
+
+            Buffer randomnessBuf = new Buffer(randomnessBytes);
 
             Log.d(TAG, "Calling blind");
             blindingFactor = new PointerByReference();
-            blind(messageBuf, seedBuf, blindedMessageBuf, blindingFactor);
+            blind(messageBuf, randomnessBuf, blindedMessageBuf, blindingFactor);
 
             Log.d(TAG, "Blind call done, retrieving blinded message from buffer");
             byte[] blindedMessageBytes = blindedMessageBuf.getMessage();
@@ -63,6 +70,23 @@ public class BlindThresholdBlsModule extends ReactContextBaseJavaModule {
             free_vector(blindedMessageBuf.message, blindedMessageBuf.len);
 
             promise.resolve(b64BlindedMessage);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception while blinding the message: " + e.getMessage());
+            promise.reject(e.getMessage());
+        }
+    }
+
+    // TODO add support for multiple outstanding blind calls
+    @ReactMethod
+    public void blindMessage(String message, Promise promise) {
+        try {
+            Log.d(TAG, "Preparing blinding seed");
+            Random random = new Random();
+            byte[] seed = new byte[32];
+            random.nextBytes(seed);
+            String randomness = Base64.encodeToString(seed, Base64.DEFAULT);
+
+            blindMessageWithRandom(message, randomness, promise);
         } catch (Exception e) {
             Log.e(TAG, "Exception while blinding the message: " + e.getMessage());
             promise.reject(e.getMessage());
