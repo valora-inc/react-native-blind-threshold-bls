@@ -5,7 +5,7 @@
 + (uint8_t*) nsDataToByteArray: (NSData*)data;
 - (void) blindMessage: (NSString *) message
                  randomness:(NSString *) randomness
-                 resolver:(RCTPromiseResolveBlock)resolve
-                 rejecter:(RCTPromiseRejectBlock)reject);
+                 resolver:(RCTPromiseResolveBlock) resolve
+                 rejecter:(RCTPromiseRejectBlock) reject;
 
 @end
