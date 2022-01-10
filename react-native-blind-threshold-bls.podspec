@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
   s.ios.vendored_library = 'ios/Libraries/libblind_threshold_bls.a'
   s.requires_arc = true
 
-  s.dependency "React"
+  s.dependency "React-Core"
   # ...
   # s.dependency "..."
 end
